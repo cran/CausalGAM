@@ -1,9 +1,12 @@
 import(gam)
 
+importFrom("graphics", "lines", "par", "plot")
+importFrom("stats", "as.formula", "gaussian", "model.frame",
+           "model.response", "pnorm", "predict", "residuals", "sd")
 export(
-       estimate.ATE,
-       balance.IPW
-       )
+    estimate.ATE,
+    balance.IPW
+)
 
 S3method(print, CausalGAM)
 S3method(print, balance)

@@ -97,9 +97,9 @@ Adam N. Glynn and Kevin M. Quinn. 2010. "An Introduction to the Augmented Invers
 
 }
 \author{
-Adam Glynn, Harvard University
+Adam Glynn, Emory University
 
-Kevin Quinn, UC Berkeley
+Kevin Quinn, University of Michigan
 }
 
 

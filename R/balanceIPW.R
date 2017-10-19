@@ -56,11 +56,11 @@ balance.IPW <- function(pscore.formula, pscore.family,
   
   if (suppress.warnings){
     gam.ps <- suppressWarnings(gam(pscore.formula, family=pscore.family,
-                  data=data, na.action="na.fail", ...))
+                  data=data, ...))
   }
   else{
     gam.ps <- gam(pscore.formula, family=pscore.family,
-                  data=data, na.action="na.fail", ...)
+                  data=data, ...)
   }
 
 

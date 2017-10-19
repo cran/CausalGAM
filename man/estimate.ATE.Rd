@@ -122,9 +122,9 @@ Jared K. Lunceford and Marie Davidian. 2004. "Stratification and Weighting via t
 
 }
 \author{
-Adam Glynn, Harvard University
+Adam Glynn, Emory University
 
-Kevin Quinn, UC Berkeley
+Kevin Quinn, University of Michigan
 }
 
 

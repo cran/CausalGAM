@@ -6,11 +6,11 @@
    this.year <- substr(date, x[1], x[1] + attr(x, "match.length") - 1)
    
    # echo output to screen
-   cat("##\n## CausalGAM Package\n")
+   packageStartupMessage("##\n## CausalGAM Package\n")
 #   cat("## Copyright (C) 2009-", this.year,
-   cat("## Copyright (C) 2009",
+   packageStartupMessage("## Copyright (C) 2009",
    " Adam Glynn and Kevin Quinn\n", sep="")
-   require(gam, quietly=TRUE)
+   #require(gam, quietly=TRUE)
 }
 
 

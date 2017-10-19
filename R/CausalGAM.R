@@ -11,12 +11,12 @@ estimate.ATE <- function(pscore.formula, pscore.family,
                          nboot=501, variance.smooth.deg=1,
                          variance.smooth.span=0.75,
                          var.gam.plot=TRUE, suppress.warnings=TRUE, ...){
-
+  
   
   if (is.null(data)){
     stop("'data' must be specified in call to 'estimate.ATE'\n")
   }
-
+  
   if (nboot < 0){
     nboot <- 0
   }
@@ -33,22 +33,22 @@ estimate.ATE <- function(pscore.formula, pscore.family,
   if (variance.smooth.span <=0 | variance.smooth.deg < 0){
     zzzzzbsfitzzzzz <- TRUE  ## don't calculate asymp var
   }
-
+  
   
   divby0.action <- match.arg(divby0.action)
-
+  
   if (max(is.na(data)) > 0){
     stop("'data' contains NAs. Remove NAs and call estimate.ATE again.\n")
   }
-
-
-
+  
+  
+  
   
   #pscore.model.frame <- model.frame(pscore.formula, data=data, ...)
   #treatment.vec <- model.response(pscore.model.frame)
   #treatment.var <- colnames(pscore.model.frame)[1]
- 
-
+  
+  
   treatment.vec <- data[, treatment.var]
   
   if (is.factor(treatment.vec)){
@@ -57,38 +57,38 @@ estimate.ATE <- function(pscore.formula, pscore.family,
   else{
     treatment.values <- sort(unique(treatment.vec))
   }
-
-
-
+  
+  
+  
   
   treated.data <- data[treatment.vec==treatment.values[2],]
   control.data <- data[treatment.vec==treatment.values[1],]
-
+  
   
   
   n.treated.pre <- nrow(treated.data)
   n.control.pre <- nrow(control.data)
-
+  
   
   if (suppress.warnings){
     gam.ps <- suppressWarnings(gam(pscore.formula, family=pscore.family,
-                  data=data, na.action="na.fail", ...))
+                                   data=data, ...))
   }
   else{
     gam.ps <- gam(pscore.formula, family=pscore.family,
-                  data=data, na.action="na.fail", ...)
+                  data=data, ...)
   }
-
-
+  
+  
   
   pscore.probs <- predict(gam.ps, newdata=data, type="response", ...)
-
-
   
-
+  
+  
+  
   
   pscores.pre <- pscore.probs
-    
+  
   truncated.indic <- rep(FALSE, nrow(data))
   discarded.indic <- rep(FALSE, nrow(data))
   n.treated.post <- n.treated.pre
@@ -117,31 +117,31 @@ estimate.ATE <- function(pscore.formula, pscore.family,
       n.control.post <- nrow(control.data)
     }    
   }
-
-
-
-
+  
+  
+  
+  
   outcome.vec <- model.response(model.frame(outcome.formula.t, data=data))
-
-
+  
+  
   
   if (suppress.warnings){
     gam.t <- suppressWarnings(gam(outcome.formula.t, family=outcome.family,
-                 data=treated.data, na.action="na.fail", ...))
+                                  data=treated.data, ...))
     gam.c <- suppressWarnings(gam(outcome.formula.c, family=outcome.family,
-                 data=control.data, na.action="na.fail", ...))
+                                  data=control.data, ...))
     outcome.treated.expectation <- suppressWarnings(predict(gam.t, newdata=data,
-                                           type="response", ...))  
+                                                            type="response", ...))  
     outcome.control.expectation <- suppressWarnings(predict(gam.c, newdata=data,
-                                           type="response", ...))    
+                                                            type="response", ...))    
     res.c <- suppressWarnings(residuals(gam.c, type="response"))
     res.t <- suppressWarnings(residuals(gam.t, type="response"))
   }
   else{
     gam.t <- gam(outcome.formula.t, family=outcome.family,
-                 data=treated.data, na.action="na.fail", ...)
+                 data=treated.data, ...)
     gam.c <- gam(outcome.formula.c, family=outcome.family,
-                 data=control.data, na.action="na.fail", ...)
+                 data=control.data, ...)
     outcome.treated.expectation <- predict(gam.t, newdata=data,
                                            type="response", ...)  
     outcome.control.expectation <- predict(gam.c, newdata=data,
@@ -151,84 +151,84 @@ estimate.ATE <- function(pscore.formula, pscore.family,
   }
   
   
-
+  
   ## number of observations
   n <- length(treatment.vec)
-
-
+  
+  
   term1 <- rep(0, n)
   term2 <- rep(0, n)
   term3 <- rep(0, n)
   term4 <- rep(0, n)
   control.indic <- treatment.vec == treatment.values[1]
   treated.indic <- treatment.vec == treatment.values[2]
-
-
+  
+  
   term1 <- outcome.vec/pscore.probs
   term1[control.indic] <- 0
-
+  
   term2 <- ((1 - pscore.probs) * outcome.treated.expectation) /
     pscore.probs
   term2[control.indic] <- ((0 - pscore.probs[control.indic]) * outcome.treated.expectation[control.indic]) /pscore.probs[control.indic]
-
+  
   term3 <-  outcome.vec / (1 - pscore.probs)
   term3[treated.indic] <- 0
-
+  
   term4 <- ((1 - pscore.probs) * outcome.control.expectation) / (1 - pscore.probs)
   term4[control.indic] <- ((0 - pscore.probs[control.indic]) * outcome.control.expectation[control.indic]) / (1 - pscore.probs[control.indic])
-
   
-##  for (i in 1:n){
-##    if (treatment.vec[i] != treatment.values[1]){ ## treated
-##      term1[i] <-  outcome.vec[i]/pscore.probs[i]
-##      term2[i] <- ((1 - pscore.probs[i]) * outcome.treated.expectation[i]) /
-##        pscore.probs[i] 
-##      ## term3[i] <-  0
-##      term4[i] <- ((1 - pscore.probs[i]) * outcome.control.expectation[i]) /
-##        (1 - pscore.probs[i])
-##    }
-##    else{ ## control
-##      ##term1[i] <- 0
-##      term2[i] <- ((0 - pscore.probs[i]) * outcome.treated.expectation[i]) /
-##        pscore.probs[i] 
-##      term3[i] <- outcome.vec[i] / (1 - pscore.probs[i])
-##      term4[i] <- ((0 - pscore.probs[i]) * outcome.control.expectation[i]) /
-##        (1 - pscore.probs[i])       
-##    }    
-##  } ## end i in 1:n loop
-
+  
+  ##  for (i in 1:n){
+  ##    if (treatment.vec[i] != treatment.values[1]){ ## treated
+  ##      term1[i] <-  outcome.vec[i]/pscore.probs[i]
+  ##      term2[i] <- ((1 - pscore.probs[i]) * outcome.treated.expectation[i]) /
+  ##        pscore.probs[i] 
+  ##      ## term3[i] <-  0
+  ##      term4[i] <- ((1 - pscore.probs[i]) * outcome.control.expectation[i]) /
+  ##        (1 - pscore.probs[i])
+  ##    }
+  ##    else{ ## control
+  ##      ##term1[i] <- 0
+  ##      term2[i] <- ((0 - pscore.probs[i]) * outcome.treated.expectation[i]) /
+  ##        pscore.probs[i] 
+  ##      term3[i] <- outcome.vec[i] / (1 - pscore.probs[i])
+  ##      term4[i] <- ((0 - pscore.probs[i]) * outcome.control.expectation[i]) /
+  ##        (1 - pscore.probs[i])       
+  ##    }    
+  ##  } ## end i in 1:n loop
+  
   ATE.AIPW.hat <- (1/n) * (sum(term1) - sum(term2) - sum(term3) - sum(term4))
-
-    
+  
+  
   I.hat <- term1 - term2 - term3 - term4 - ATE.AIPW.hat
   ATE.AIPW.sand.var <- (1 / n^2) * sum(I.hat^2)
   ATE.AIPW.sand.se <- sqrt(ATE.AIPW.sand.var)
-
-
-
-
-
+  
+  
+  
+  
+  
   ## regression
   ATE.reg.hat <- mean(outcome.treated.expectation) -
     mean(outcome.control.expectation) 
   
-
-
+  
+  
   ## IPW
   weight.norm.1 <- 1/sum(treated.indic/pscore.probs)
   weight.norm.3 <- 1/sum((1-treated.indic)/(1-pscore.probs))
   ATE.IPW.hat <- weight.norm.1 * sum(term1) - weight.norm.3 * sum(term3)
-
-
-
+  
+  
+  
   ## Calculate estimated large sample SEs
   res.data.c <- data.frame(res=res.c,
                            pscore.probs=pscore.probs[control.indic])
   res.data.t <- data.frame(res=res.t,
                            pscore.probs=pscore.probs[treated.indic])
-
-
-
+  
+  
+  
   if (length(unique(pscore.probs)) > 3){
     var.formula <- as.formula(substitute((res^2) ~ lo(pscore.probs,
                                                       degree=variance.smooth.deg,
@@ -240,13 +240,13 @@ estimate.ATE <- function(pscore.formula, pscore.family,
                                          list(variance.smooth.deg=variance.smooth.deg, variance.smooth.span=variance.smooth.span)))
   }
   
-#  var.formula <- as.formula((res^2) ~ lo(pscore.probs,
-#                                         degree=2, span=.75))
+  #  var.formula <- as.formula((res^2) ~ lo(pscore.probs,
+  #                                         degree=2, span=.75))
   
   if(!zzzzzbsfitzzzzz){
     if (suppress.warnings){
       var.gam.c <- suppressWarnings(gam(var.formula, data=res.data.c,
-                                       family=gaussian(log)))
+                                        family=gaussian(log)))
       var.gam.t <- suppressWarnings(gam(var.formula, data=res.data.t,
                                         family=gaussian(log)))
     }
@@ -254,7 +254,7 @@ estimate.ATE <- function(pscore.formula, pscore.family,
       var.gam.c <- gam(var.formula, data=res.data.c, family=gaussian(log))
       var.gam.t <- gam(var.formula, data=res.data.t, family=gaussian(log))
     }
-      
+    
     if(var.gam.plot){
       par(mfrow=c(2,1))
       plot(res.data.c$pscore.probs, res.data.c$res^2,
@@ -273,8 +273,8 @@ estimate.ATE <- function(pscore.formula, pscore.family,
             predict(var.gam.t, type="response")[ord.t], col="red", lwd=2)
       
     }
-
-
+    
+    
     cond.var.c <- suppressWarnings(predict(var.gam.c,
                                            newdata=data, type="response"))
     cond.var.t <- suppressWarnings(predict(var.gam.t,
@@ -286,37 +286,37 @@ estimate.ATE <- function(pscore.formula, pscore.family,
   }
   
   ATE.AIPW.asymp.var <- (1/(n^2))*sum(
-                                      cond.var.t/pscore.probs +
-                                      cond.var.c/(1 - pscore.probs) +
-                                      (outcome.treated.expectation -
-                                       outcome.control.expectation -
-                                       ATE.AIPW.hat)^2
-                                      )
+    cond.var.t/pscore.probs +
+      cond.var.c/(1 - pscore.probs) +
+      (outcome.treated.expectation -
+         outcome.control.expectation -
+         ATE.AIPW.hat)^2
+  )
   
   ATE.reg.asymp.var <- (1/(n^2))*sum(
-                                     cond.var.t/pscore.probs +
-                                     cond.var.c/(1 - pscore.probs) +
-                                     (outcome.treated.expectation -
-                                      outcome.control.expectation -
-                                      ATE.reg.hat)^2
-                                     )
+    cond.var.t/pscore.probs +
+      cond.var.c/(1 - pscore.probs) +
+      (outcome.treated.expectation -
+         outcome.control.expectation -
+         ATE.reg.hat)^2
+  )
   
   ATE.IPW.asymp.var <- (1/(n^2))*sum(
-                                     cond.var.t/pscore.probs +
-                                     cond.var.c/(1 - pscore.probs) +
-                                     (outcome.treated.expectation -
-                                      outcome.control.expectation -
-                                      ATE.IPW.hat)^2
-                                     )
+    cond.var.t/pscore.probs +
+      cond.var.c/(1 - pscore.probs) +
+      (outcome.treated.expectation -
+         outcome.control.expectation -
+         ATE.IPW.hat)^2
+  )
   
   
   ATE.AIPW.asymp.se <- sqrt(ATE.AIPW.asymp.var)
   ATE.reg.asymp.se <- sqrt(ATE.reg.asymp.var)
   ATE.IPW.asymp.se <- sqrt(ATE.IPW.asymp.var)
   
-
-
-
+  
+  
+  
   ## calculate bootstrap SEs
   ATE.AIPW.bs <- rep(NA, nboot)
   ATE.reg.bs <- rep(NA, nboot)
@@ -348,14 +348,14 @@ estimate.ATE <- function(pscore.formula, pscore.family,
       ATE.reg.bs[biter] <- out$ATE.reg.hat
       ATE.IPW.bs[biter] <- out$ATE.IPW.hat
     }
-
+    
     
     ATE.AIPW.bs.se <- sd(ATE.AIPW.bs)
     ATE.reg.bs.se <- sd(ATE.reg.bs)
     ATE.IPW.bs.se <- sd(ATE.IPW.bs)
   }
   
-
+  
   
   
   return(structure(list(ATE.AIPW.hat=ATE.AIPW.hat,
@@ -390,7 +390,7 @@ estimate.ATE <- function(pscore.formula, pscore.family,
                         call=call,
                         data=data),
                    class="CausalGAM"
-                   ))
+  ))
   
 }
 
@@ -440,7 +440,7 @@ estimate.ATE <- function(pscore.formula, pscore.family,
     }    
   }
   cat("###################################################################\n\n")
-
+  
   
   cat("###################################################################\n")
   cat("IPW Estimator:\n")
@@ -474,8 +474,8 @@ estimate.ATE <- function(pscore.formula, pscore.family,
     }    
   }
   cat("###################################################################\n\n")
-
-
+  
+  
   cat("###################################################################\n")
   cat("Regression Estimator:\n")
   cat("-------------------------------------------------------------------\n")
@@ -508,7 +508,7 @@ estimate.ATE <- function(pscore.formula, pscore.family,
     }    
   }
   cat("###################################################################\n\n")
-
+  
   cat("###################################################################\n")
   cat("General Information\n")
   cat("-------------------------------------------------------------------\n")
